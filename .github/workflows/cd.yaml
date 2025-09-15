@@ -1,0 +1,35 @@
+name: Continuous Delivery (Claude Code Router)
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  AZURE_REGISTRY_LOGIN_SERVER: ${{ vars.AZURE_REGISTRY_LOGIN_SERVER }}
+  AZURE_REGISTRY_USERNAME: ${{ vars.AZURE_REGISTRY_USERNAME }}
+  DOCKER_IMAGE: "claude-code-router"
+jobs:
+  build-and-push:
+    name: Build and Push Docker Image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Log in to Azure Container Registry
+        uses: azure/docker-login@v1
+        with:
+          login-server: ${{ vars.AZURE_REGISTRY_LOGIN_SERVER }}
+          username: ${{ vars.AZURE_REGISTRY_USERNAME }}
+          password: ${{ secrets.AZURE_REGISTRY_PASSWORD }}
+
+      - name: Build the Docker image
+        run: |
+          docker build -t ${{ vars.AZURE_REGISTRY_LOGIN_SERVER }}/${{ env.DOCKER_IMAGE }}:${{ github.sha }} .
+          docker build -t ${{ vars.AZURE_REGISTRY_LOGIN_SERVER }}/${{ env.DOCKER_IMAGE }}:latest .
+
+      - name: Push the Docker image
+        run: |
+          docker push ${{ vars.AZURE_REGISTRY_LOGIN_SERVER }}/${{ env.DOCKER_IMAGE }}:${{ github.sha }}
+          docker push ${{ vars.AZURE_REGISTRY_LOGIN_SERVER }}/${{ env.DOCKER_IMAGE }}:latest
